@@ -1,2 +1,26 @@
-# erl_crash.dump - runtime crash dump
+# Elixir
+/_build
+/cover
+/deps
 erl_crash.dump
+*.ez
+*.beam
+
+# Mix
+.mix_cache
+
+# Development
+.env
+.env.*
+.idea
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+_build/
+.elixir_ls/
