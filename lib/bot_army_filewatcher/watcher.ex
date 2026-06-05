@@ -198,37 +198,7 @@ defmodule BotArmyFileWatcher.Watcher do
     BotArmyRuntime.NATS.Publisher.publish("events.filewatcher.dirty_repo_warning", payload)
   end
 
-  defp maybe_suggest_tests(dir, status) do
-    # Check if this is a bot directory and suggest tests
-    if bot_name = detect_bot_from_path(dir) do
-      # Only suggest if there are actual source file changes
-      if status.staged > 0 or status.unstaged > 0 do
-        publish_test_suggestion(bot_name, status)
-      end
-    end
-  end
-
-  defp publish_test_suggestion(bot_name, status) do
-    payload = %{
-      "event" => "events.filewatcher.test_suggestion",
-      "event_id" => UUID.uuid4(),
-      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "source" => "bot_army_filewatcher",
-      "source_node" => node() |> Atom.to_string(),
-      "schema_version" => "1.0",
-      "payload" => %{
-        "bot" => bot_name,
-        "changed_files" => status.total,
-        "untracked" => status.untracked,
-        "suggestion" => "Run tests for #{bot_name}?",
-        "command" => "cd ~/code/elixir_bots/bot_army_#{bot_name} && mix test",
-        "context" => %{
-          "mode" => "development",
-          "confidence" => "suggested"
-        }
-      }
-    }
-
-    BotArmyRuntime.NATS.Publisher.publish("events.filewatcher.test_suggestion", payload)
+  defp maybe_suggest_tests(_dir, _status) do
+    :ok
   end
 end
