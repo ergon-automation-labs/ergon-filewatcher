@@ -28,7 +28,7 @@ defmodule BotArmyFileWatcher.Watcher do
   # Server callbacks
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     Logger.info("[FileWatcher] Starting watcher")
 
     # Initial git status check
@@ -62,28 +62,9 @@ defmodule BotArmyFileWatcher.Watcher do
   # Directory watching
 
   defp watch_directory_changes do
-    # Get current working directory
-    case System.cwd() do
-      {:ok, cwd} ->
-        # Check if this is a bot directory
-        if bot_name = detect_bot_from_path(cwd) do
-          publish_context_signal(%{
-            "type" => "directory_change",
-            "path" => cwd,
-            "bot" => bot_name
-          })
-        end
-
-      {:error, reason} ->
-        Logger.warning("[FileWatcher] Failed to get cwd: #{inspect(reason)}")
-    end
-  end
-
-  defp detect_bot_from_path(path) do
-    # Extract bot name from path like /Users/abby/code/bots/bot_army_gtd
-    case Regex.run(~r{/bot_army_([a-z_]+)$}, path) do
-      [_, bot_name] -> bot_name
-      _ -> nil
+    case File.cwd() do
+      {:ok, _cwd} -> :ok
+      {:error, reason} -> Logger.warning("[FileWatcher] Failed to get cwd: #{inspect(reason)}")
     end
   end
 
