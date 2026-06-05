@@ -105,7 +105,10 @@ publish-release: release
 	@echo ""
 
 	@set -e; \
-	VERSION=$$(sed -n 's/^[[:space:]]*version:[[:space:]]*"\([^"]*\)".*/\1/p' mix.exs | head -n 1); \
+	VERSION=$$(sed -n 's/^[[:space:]]*@version[[:space:]]*"\([^"]*\)".*/\1/p' mix.exs | head -n 1); \
+	if [ -z "$$VERSION" ]; then \
+		VERSION=$$(sed -n 's/^[[:space:]]*version:[[:space:]]*"\([^"]*\)".*/\1/p' mix.exs | head -n 1); \
+	fi; \
 	if [ -z "$$VERSION" ]; then \
 		echo "Failed to resolve version from mix.exs"; \
 		exit 1; \
