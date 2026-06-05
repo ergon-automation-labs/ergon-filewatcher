@@ -42,7 +42,14 @@ defmodule BotArmyFileWatcher.MixProject do
       {:postgrex, "~> 0.16"},
       {:jason, "~> 1.4"},
       {:req, "~> 0.5"},
-      {:elixir_uuid, "~> 1.2"}
+      {:elixir_uuid, "~> 1.2"},
+
+      # Development/Test
+      {:ex_doc, "~> 0.30", only: :dev},
+      {:credo, "~> 1.7", only: [:dev, :test]},
+      {:dialyxir, "~> 1.4", only: [:dev, :test]},
+      {:excoveralls, "~> 0.17", only: :test},
+      {:mox, "~> 1.0", only: :test}
     ]
   end
 
