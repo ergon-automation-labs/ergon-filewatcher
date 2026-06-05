@@ -18,7 +18,7 @@ defmodule BotArmyFileWatcher.MixProject do
       docs: docs(),
       releases: [
         filewatcher_bot: [
-          applications: [bot_army_library_runtime: :permanent, bot_army_filewatcher: :permanent]
+          applications: [bot_army_filewatcher: :permanent]
         ]
       ]
     ]

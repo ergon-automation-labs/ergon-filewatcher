@@ -63,9 +63,18 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
         Logger.info("[Filewatcher] Connected to NATS")
 
         # Register subjects for runtime discovery
-        BotArmyRuntime.Registry.register("filewatcher", @subjects, @version)
+        deployment_status =
+          Application.get_env(:bot_army_filewatcher, :deployment_status, "experimental")
 
-        {:noreply, %{state | conn: conn}}
+        case register_with_retry("filewatcher", @subjects, @version, deployment_status, 0) do
+          :ok ->
+            {:noreply, %{state | conn: conn}}
+
+          :error ->
+            Logger.warning("Could not register with registry, retrying in 1s")
+            Process.send_after(self(), :connect_retry, 1_000)
+            {:noreply, state}
+        end
 
       {:error, _reason} ->
         Logger.warning("[Filewatcher] NATS connection not ready, will retry")
@@ -329,5 +338,20 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
     end
 
     {:noreply, state}
+  end
+
+  defp register_with_retry(_bot, _subjects, _version, _status, attempts) when attempts > 3 do
+    :error
+  end
+
+  defp register_with_retry(bot, subjects, version, status, attempts) do
+    try do
+      BotArmyRuntime.Registry.register(bot, subjects, version, status)
+      :ok
+    rescue
+      _e ->
+        Process.sleep(100 * (attempts + 1))
+        register_with_retry(bot, subjects, version, status, attempts + 1)
+    end
   end
 end
