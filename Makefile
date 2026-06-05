@@ -93,11 +93,11 @@ release: check
 	@echo "==============================================="
 	@echo "Building OTP release"
 	@echo "==============================================="
-	rm -rf _build/prod/rel/{{BOT_RELEASE_NAME}}
+	rm -rf _build/prod/rel/$(BOT_RELEASE_NAME)
 	MIX_ENV=prod $(MIX) release
 	@echo ""
 	@echo "✓ Release built successfully"
-	@echo "Location: _build/prod/rel/{{BOT_RELEASE_NAME}}/"
+	@echo "Location: _build/prod/rel/$(BOT_RELEASE_NAME)/"
 	@echo ""
 
 publish-release: release
@@ -115,10 +115,10 @@ publish-release: release
 		echo "Failed to resolve version from mix.exs"; \
 		exit 1; \
 	fi; \
-	TARBALL="{{BOT_RELEASE_NAME}}-$$VERSION.tar.gz"; \
+	TARBALL="$(BOT_RELEASE_NAME)-$$VERSION.tar.gz"; \
 	echo "Version: $$VERSION"; \
 	echo "Creating release tarball..."; \
-	tar -czf "$$TARBALL" -C _build/prod/rel {{BOT_RELEASE_NAME}}/; \
+	tar -czf "$$TARBALL" -C _build/prod/rel $(BOT_RELEASE_NAME)/; \
 	echo "✓ Tarball created: $$TARBALL"; \
 	echo ""; \
 	echo "Creating GitHub release v$$VERSION..."; \
@@ -127,7 +127,7 @@ publish-release: release
 	else \
 		gh release create "v$$VERSION" "$$TARBALL" \
 			--title "Release v$$VERSION" \
-			--notes "{{BOT_NAME_TITLE}} Elixir release v$$VERSION. Download and deploy with Jenkins." \
+			--notes "$(BOT_NAME_TITLE) Elixir release v$$VERSION. Download and deploy with Jenkins." \
 			--draft=false; \
 	fi; \
 	echo "✓ Release published to GitHub"; \
