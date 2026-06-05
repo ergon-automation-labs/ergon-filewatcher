@@ -103,10 +103,11 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
         "context.state.query" ->
           handle_context_query(msg, state)
 
+        _ when msg.reply_to ->
+          handle_request(msg, state)
+
         _ ->
-          if msg.reply_to do
-            handle_request(msg, state)
-          end
+          nil
       end
     end)
 
@@ -218,67 +219,9 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
   # Context handlers
 
   defp handle_context_desired(msg, state) do
-    # Extract the desired context state
     case Jason.decode(msg.body) do
       {:ok, payload} ->
-        mode = Map.get(payload, "mode")
-        path = Map.get(payload, "path")
-
-        if mode == "context_change" and path do
-          # Get git status for the new directory
-          case get_git_status(path) do
-            {:ok, status} ->
-              # Check if there are changes worth noting
-              total = status.untracked + status.staged + status.unstaged
-
-              if total > 0 do
-                # Publish context update with file status
-                context_update = %{
-                  "event" => "context.signal.filewatcher",
-                  "event_id" => UUID.uuid4(),
-                  "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
-                  "source" => "bot_army_filewatcher",
-                  "signal" => %{
-                    "type" => "git_changes",
-                    "path" => path,
-                    "status" => status,
-                    "confidence" => "suggested"
-                  }
-                }
-
-                BotArmyRuntime.NATS.Publisher.publish(
-                  "context.signal.filewatcher",
-                  context_update
-                )
-
-                # Send status to ghostty via reply_to if available
-                if msg.reply_to do
-                  response = %{
-                    "ok" => true,
-                    "schema_version" => "1.0",
-                    "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
-                    "has_updates" => total > 0,
-                    "updates" => %{
-                      "untracked" => status.untracked,
-                      "staged" => status.staged,
-                      "unstaged" => status.unstaged,
-                      "suggestion" =>
-                        if(status.staged + status.unstaged > 0,
-                          do: "Run tests?",
-                          else: "Repo has untracked files"
-                        )
-                    }
-                  }
-
-                  send_response(state, msg.reply_to, response)
-                end
-              end
-
-            {:error, _reason} ->
-              # Not a git repo or git command failed - just pass through
-              nil
-          end
-        end
+        process_context_change(msg, payload, state)
 
       _ ->
         Logger.debug("[Filewatcher] Invalid context.state.desired payload")
@@ -286,6 +229,69 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
 
     {:noreply, state}
   end
+
+  defp process_context_change(msg, payload, state) do
+    mode = Map.get(payload, "mode")
+    path = Map.get(payload, "path")
+
+    if mode == "context_change" and path do
+      case get_git_status(path) do
+        {:ok, status} -> handle_git_status_change(msg, path, status, state)
+        {:error, _reason} -> nil
+      end
+    end
+  end
+
+  defp handle_git_status_change(msg, path, status, state) do
+    total = status.untracked + status.staged + status.unstaged
+
+    if total > 0 do
+      publish_git_change_signal(path, status)
+      send_context_response(msg, status, state)
+    end
+  end
+
+  defp publish_git_change_signal(path, status) do
+    context_update = %{
+      "event" => "context.signal.filewatcher",
+      "event_id" => UUID.uuid4(),
+      "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
+      "source" => "bot_army_filewatcher",
+      "signal" => %{
+        "type" => "git_changes",
+        "path" => path,
+        "status" => status,
+        "confidence" => "suggested"
+      }
+    }
+
+    BotArmyRuntime.NATS.Publisher.publish("context.signal.filewatcher", context_update)
+  end
+
+  defp send_context_response(msg, status, state) when msg.reply_to do
+    total = status.untracked + status.staged + status.unstaged
+
+    response = %{
+      "ok" => true,
+      "schema_version" => "1.0",
+      "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
+      "has_updates" => total > 0,
+      "updates" => %{
+        "untracked" => status.untracked,
+        "staged" => status.staged,
+        "unstaged" => status.unstaged,
+        "suggestion" =>
+          if(status.staged + status.unstaged > 0,
+            do: "Run tests?",
+            else: "Repo has untracked files"
+          )
+      }
+    }
+
+    send_response(state, msg.reply_to, response)
+  end
+
+  defp send_context_response(_msg, _status, _state), do: nil
 
   defp handle_context_query(msg, state) do
     # Handle queries for filewatcher context

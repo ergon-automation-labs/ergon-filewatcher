@@ -17,7 +17,7 @@ defmodule BotArmyFileWatcher.Watcher do
   require Logger
 
   @watch_interval_ms 1000
-  @git_status_threshold Application.get_env(:bot_army_filewatcher, :git_status_threshold, 10)
+  @git_status_threshold Application.compile_env(:bot_army_filewatcher, :git_status_threshold, 10)
 
   # API
 
@@ -90,30 +90,33 @@ defmodule BotArmyFileWatcher.Watcher do
   # Git status monitoring
 
   defp check_git_status do
-    # Get watched directories from config (env var or defaults)
-    watched_dirs =
-      case Application.get_env(:bot_army_filewatcher, :watched_dirs, []) do
-        [] ->
-          # Fall back to default directories if env var not set
-          [
-            "/Users/abby/code/bots/bot_army_gtd",
-            "/Users/abby/code/bots/bot_army_context_broker",
-            "/Users/abby/code/bots/bot_army_weather_bot"
-          ]
+    watched_dirs = get_watched_dirs()
 
-        dirs when is_list(dirs) ->
-          dirs
-      end
+    Enum.each(watched_dirs, &check_directory_status/1)
+  end
 
-    for dir <- watched_dirs do
-      if File.dir?(dir) do
-        case get_git_status(dir) do
-          {:ok, status} ->
-            handle_git_status(dir, status)
+  defp get_watched_dirs do
+    case Application.get_env(:bot_army_filewatcher, :watched_dirs, []) do
+      [] ->
+        [
+          "/Users/abby/code/bots/bot_army_gtd",
+          "/Users/abby/code/bots/bot_army_context_broker",
+          "/Users/abby/code/bots/bot_army_weather_bot"
+        ]
 
-          {:error, reason} ->
-            Logger.debug("[FileWatcher] Git status for #{dir}: #{inspect(reason)}")
-        end
+      dirs when is_list(dirs) ->
+        dirs
+    end
+  end
+
+  defp check_directory_status(dir) do
+    if File.dir?(dir) do
+      case get_git_status(dir) do
+        {:ok, status} ->
+          handle_git_status(dir, status)
+
+        {:error, reason} ->
+          Logger.debug("[FileWatcher] Git status for #{dir}: #{inspect(reason)}")
       end
     end
   end
