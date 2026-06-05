@@ -133,48 +133,51 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
         send_response(state, msg.reply_to, response)
 
       "filewatcher.git_status.query" ->
-        # Parse request for directory
-        with {:ok, payload} <- Jason.decode(msg.body),
-             directory <- Map.get(payload, "directory", System.cwd!()) do
-          case get_git_status(directory) do
-            {:ok, status} ->
-              response = %{
-                "ok" => true,
-                "schema_version" => "1.0",
-                "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
-                "directory" => directory,
-                "status" => status
-              }
-
-              BotArmyRuntime.NATS.Reply.ok(response)
-              send_response(state, msg.reply_to, response)
-
-            {:error, reason} ->
-              response = %{
-                "ok" => false,
-                "schema_version" => "1.0",
-                "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
-                "error" => inspect(reason)
-              }
-
-              BotArmyRuntime.NATS.Reply.error(inspect(reason), :git_status_error)
-              send_response(state, msg.reply_to, response)
-          end
-        else
-          _ ->
-            response = %{
-              "ok" => false,
-              "schema_version" => "1.0",
-              "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
-              "error" => "Invalid request payload"
-            }
-
-            BotArmyRuntime.NATS.Reply.error("Invalid request payload", :validation_error)
-            send_response(state, msg.reply_to, response)
-        end
+        handle_git_status_query(msg, state)
 
       _ ->
         Logger.debug("[Filewatcher] Unknown request subject: #{msg.topic}")
+    end
+  end
+
+  defp handle_git_status_query(msg, state) do
+    with {:ok, payload} <- Jason.decode(msg.body),
+         directory <- Map.get(payload, "directory", System.cwd!()) do
+      case get_git_status(directory) do
+        {:ok, status} ->
+          response = %{
+            "ok" => true,
+            "schema_version" => "1.0",
+            "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
+            "directory" => directory,
+            "status" => status
+          }
+
+          BotArmyRuntime.NATS.Reply.ok(response)
+          send_response(state, msg.reply_to, response)
+
+        {:error, reason} ->
+          response = %{
+            "ok" => false,
+            "schema_version" => "1.0",
+            "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
+            "error" => inspect(reason)
+          }
+
+          BotArmyRuntime.NATS.Reply.error(inspect(reason), :git_status_error)
+          send_response(state, msg.reply_to, response)
+      end
+    else
+      _ ->
+        response = %{
+          "ok" => false,
+          "schema_version" => "1.0",
+          "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
+          "error" => "Invalid request payload"
+        }
+
+        BotArmyRuntime.NATS.Reply.error("Invalid request payload", :validation_error)
+        send_response(state, msg.reply_to, response)
     end
   end
 
