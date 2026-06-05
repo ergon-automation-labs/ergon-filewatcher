@@ -1,7 +1,7 @@
 defmodule BotArmyFileWatcher.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
 
   def version do
     @version
@@ -15,7 +15,12 @@ defmodule BotArmyFileWatcher.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      docs: docs()
+      docs: docs(),
+      releases: [
+        filewatcher_bot: [
+          applications: [bot_army_library_runtime: :permanent, bot_army_filewatcher: :permanent]
+        ]
+      ]
     ]
   end
 
@@ -28,14 +33,16 @@ defmodule BotArmyFileWatcher.MixProject do
 
   defp deps do
     [
-      {:bot_army_runtime, "~> 0.14"},
-      {:bot_army_core, "~> 0.3"},
+      {:bot_army_library_runtime,
+       git: "git@github.com:ergon-automation-labs/ergon-library-runtime.git", branch: "main"},
+      {:bot_army_library_core,
+       git: "git@github.com:ergon-automation-labs/ergon-library-core.git", branch: "main"},
       {:ecto, "~> 3.10"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, "~> 0.16"},
       {:jason, "~> 1.4"},
       {:req, "~> 0.5"},
-      {:uuid, "~> 0.8"}
+      {:elixir_uuid, "~> 1.2"}
     ]
   end
 

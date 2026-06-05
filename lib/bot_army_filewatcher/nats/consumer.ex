@@ -127,6 +127,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
             "watch_interval_ms" => 1000
           }
         }
+
         BotArmyRuntime.NATS.Reply.ok(response)
         send_response(state, msg.reply_to, response)
 
@@ -143,6 +144,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
                 "directory" => directory,
                 "status" => status
               }
+
               BotArmyRuntime.NATS.Reply.ok(response)
               send_response(state, msg.reply_to, response)
 
@@ -153,6 +155,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
                 "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
                 "error" => inspect(reason)
               }
+
               BotArmyRuntime.NATS.Reply.error(inspect(reason), :git_status_error)
               send_response(state, msg.reply_to, response)
           end
@@ -164,6 +167,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
               "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
               "error" => "Invalid request payload"
             }
+
             BotArmyRuntime.NATS.Reply.error("Invalid request payload", :validation_error)
             send_response(state, msg.reply_to, response)
         end
@@ -175,18 +179,20 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
 
   defp get_git_status(dir) do
     cmd = "cd #{shell_escape(dir)} && git status --porcelain 2>/dev/null"
+
     case System.cmd("bash", ["-c", cmd], stderr: :merge) do
       {output, 0} ->
         lines = String.split(String.trim(output), "\n")
         lines = Enum.filter(lines, &(&1 != ""))
 
         status = %{
-          untracked: Enum.count(lines, &(&1 =~ /^\?\?/)),
-          staged: Enum.count(lines, &(&1 =~ /^[AMDR]/)),
-          unstaged: Enum.count(lines, &(&1 =~ /^.[AMDR]/)),
+          untracked: Enum.count(lines, &String.starts_with?(&1, "??")),
+          staged: Enum.count(lines, &String.match?(&1, ~r/^[AMDR]/)),
+          unstaged: Enum.count(lines, &String.match?(&1, ~r/^.[AMDR]/)),
           total: Enum.count(lines),
           lines: lines
         }
+
         {:ok, status}
 
       {_, _} ->
@@ -240,7 +246,10 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
                   }
                 }
 
-                BotArmyRuntime.NATS.Publisher.publish("context.signal.filewatcher", context_update)
+                BotArmyRuntime.NATS.Publisher.publish(
+                  "context.signal.filewatcher",
+                  context_update
+                )
 
                 # Send status to ghostty via reply_to if available
                 if msg.reply_to do
@@ -253,9 +262,14 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
                       "untracked" => status.untracked,
                       "staged" => status.staged,
                       "unstaged" => status.unstaged,
-                      "suggestion" => if(status.staged + status.unstaged > 0, do: "Run tests?", else: "Repo has untracked files")
+                      "suggestion" =>
+                        if(status.staged + status.unstaged > 0,
+                          do: "Run tests?",
+                          else: "Repo has untracked files"
+                        )
                     }
                   }
+
                   send_response(state, msg.reply_to, response)
                 end
               end
@@ -287,8 +301,10 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
             "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
             "has_changes" => status.total > 0,
             "git_status" => status,
-            "suggestion" => if(status.staged + status.unstaged > 0, do: "Run tests?", else: "All clean")
+            "suggestion" =>
+              if(status.staged + status.unstaged > 0, do: "Run tests?", else: "All clean")
           }
+
           send_response(state, reply_to, response)
 
         {:error, reason} ->
@@ -298,6 +314,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
             "timestamp" => DateTime.to_iso8601(DateTime.utc_now()),
             "error" => inspect(reason)
           }
+
           send_response(state, reply_to, response)
       end
     end

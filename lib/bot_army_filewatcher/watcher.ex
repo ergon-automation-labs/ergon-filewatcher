@@ -127,12 +127,14 @@ defmodule BotArmyFileWatcher.Watcher do
       {_, 0} ->
         # Parse output
         lines = String.split(trim_output(output), "\n")
+
         status = %{
-          untracked: Enum.count(lines, &(&1 =~ /^\?\?/)),
-          staged: Enum.count(lines, &(&1 =~ /^[AMDR]/)),
-          unstaged: Enum.count(lines, &(&1 =~ /^.[AMDR]/)),
+          untracked: Enum.count(lines, &String.starts_with?(&1, "??")),
+          staged: Enum.count(lines, &String.match?(&1, ~r/^[AMDR]/)),
+          unstaged: Enum.count(lines, &String.match?(&1, ~r/^.[AMDR]/)),
           total: Enum.count(lines)
         }
+
         {:ok, status}
 
       {_, _} ->
