@@ -228,55 +228,26 @@ defmodule BotArmyFileWatcher.Watcher do
   end
 
   defp publish_test_suggestion(bot_name, status) do
-    # Get context broker for context state
-    case BotArmyRuntime.Registry.lookup("context_broker") do
-      {:ok, _pid} ->
-        # Context broker is available, publish signal
-        payload = %{
-          "event" => "events.filewatcher.test_suggestion",
-          "event_id" => UUID.uuid4(),
-          "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601(),
-          "source" => "bot_army_filewatcher",
-          "source_node" => node() |> Atom.to_string(),
-          "schema_version" => "1.0",
-          "payload" => %{
-            "bot" => bot_name,
-            "changed_files" => status.total,
-            "untracked" => status.untracked,
-            "suggestion" => "Run tests for #{bot_name}?",
-            "command" => "cd ~/code/elixir_bots/bot_army_#{bot_name} && mix test",
-            "context" => %{
-              "mode" => "development",
-              "confidence" => "suggested"
-            }
-          }
-        }
-
-        BotArmyRuntime.NATS.Publisher.publish("events.filewatcher.test_suggestion", payload)
-
-      :error ->
-        Logger.debug("[FileWatcher] Context broker not available for test suggestion")
-    end
-  end
-
-  # Context signal publishing
-
-  defp publish_context_signal(signal) do
-    # Publish to context broker
     payload = %{
-      "event" => "context.signal.filewatcher",
+      "event" => "events.filewatcher.test_suggestion",
       "event_id" => UUID.uuid4(),
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "source" => "bot_army_filewatcher",
-      "signal" => signal
+      "source_node" => node() |> Atom.to_string(),
+      "schema_version" => "1.0",
+      "payload" => %{
+        "bot" => bot_name,
+        "changed_files" => status.total,
+        "untracked" => status.untracked,
+        "suggestion" => "Run tests for #{bot_name}?",
+        "command" => "cd ~/code/elixir_bots/bot_army_#{bot_name} && mix test",
+        "context" => %{
+          "mode" => "development",
+          "confidence" => "suggested"
+        }
+      }
     }
 
-    case BotArmyRuntime.NATS.Publisher.publish("context.signal.filewatcher", payload) do
-      {:ok, _subject} ->
-        Logger.debug("[FileWatcher] Published context signal: #{signal["type"]}")
-
-      {:error, reason} ->
-        Logger.debug("[FileWatcher] Failed to publish context signal: #{inspect(reason)}")
-    end
+    BotArmyRuntime.NATS.Publisher.publish("events.filewatcher.test_suggestion", payload)
   end
 end
