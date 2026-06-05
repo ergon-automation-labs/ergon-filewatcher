@@ -1,5 +1,7 @@
 SCRIPTS_DIRECTORY ?= $(abspath $(CURDIR)/../scripts)
 MIX ?= /Users/abby/.local/share/mise/shims/mix
+BOT_RELEASE_NAME ?= filewatcher_bot
+BOT_NAME_TITLE ?= Filewatcher
 
 .PHONY: setup help deps test credo dialyzer coverage check format clean release publish-release setup-hooks setup-db reset-db logs push-and-publish
 
