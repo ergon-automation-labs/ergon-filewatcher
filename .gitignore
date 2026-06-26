@@ -1,26 +1,26 @@
-# Elixir
-/_build
-/cover
-/deps
+/_build/
+/cover/
+/deps/
+/.cache/
+/doc/
 erl_crash.dump
-*.ez
-*.beam
-
-# Mix
-.mix_cache
-
-# Development
+mix.lock
 .env
-.env.*
-.idea
-*.iml
+.env.local
+.env.*.local
+.idea/
+.vscode/
+*.sublime-workspace
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
-Thumbs.db
-
-# Build artifacts
-_build/
+.excoveralls.json
 .elixir_ls/
+*.beam
+
+# Build artifacts and crash dumps
+*.crash
+*.tar.gz
+*.tar.xz
+_build_cursor_test/
