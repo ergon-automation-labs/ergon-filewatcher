@@ -79,7 +79,7 @@ defmodule BotArmyFileWatcher.PulsePublisher do
       }
     }
 
-    BotArmyRuntime.NATS.Publisher.publish("system.health", payload)
+    BotArmyLibraryRuntime.NATS.Publisher.publish("system.health", payload)
   end
 
   defp publish_pulse do
@@ -97,7 +97,7 @@ defmodule BotArmyFileWatcher.PulsePublisher do
       }
     }
 
-    BotArmyRuntime.NATS.Publisher.publish("bot.filewatcher.pulse", payload)
+    BotArmyLibraryRuntime.NATS.Publisher.publish("bot.filewatcher.pulse", payload)
   end
 
   defp uptime_seconds do

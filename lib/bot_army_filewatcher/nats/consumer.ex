@@ -10,7 +10,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
   use GenServer
   require Logger
 
-  alias BotArmyRuntime.NATS.Reply
+  alias BotArmyLibraryRuntime.NATS.Reply
 
   @version Mix.Project.config()[:version]
   @reconnect_delay_ms 5000
@@ -58,7 +58,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
 
   @impl true
   def handle_continue(:connect, state) do
-    case GenServer.call(BotArmyRuntime.NATS.Connection, :get_connection, 5000) do
+    case GenServer.call(BotArmyLibraryRuntime.NATS.Connection, :get_connection, 5000) do
       {:ok, conn} ->
         Logger.info("[Filewatcher] Connected to NATS")
 
@@ -102,7 +102,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
 
   @impl true
   def handle_info({:msg, msg}, state) do
-    BotArmyRuntime.Tracing.with_consumer_span(msg.topic, Map.get(msg, :headers, []), fn ->
+    BotArmyLibraryRuntime.Tracing.with_consumer_span(msg.topic, Map.get(msg, :headers, []), fn ->
       Logger.debug("[Filewatcher] Received NATS message on subject: #{msg.topic}")
 
       case msg.topic do
@@ -138,7 +138,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
           }
         }
 
-        BotArmyRuntime.NATS.Reply.ok(response)
+        BotArmyLibraryRuntime.NATS.Reply.ok(response)
         send_response(state, msg.reply_to, response)
 
       "filewatcher.git_status.query" ->
@@ -162,7 +162,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
             "status" => status
           }
 
-          BotArmyRuntime.NATS.Reply.ok(response)
+          BotArmyLibraryRuntime.NATS.Reply.ok(response)
           send_response(state, msg.reply_to, response)
 
         {:error, reason} ->
@@ -173,7 +173,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
             "error" => inspect(reason)
           }
 
-          BotArmyRuntime.NATS.Reply.error(inspect(reason), :git_status_error)
+          BotArmyLibraryRuntime.NATS.Reply.error(inspect(reason), :git_status_error)
           send_response(state, msg.reply_to, response)
       end
     else
@@ -185,7 +185,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
           "error" => "Invalid request payload"
         }
 
-        BotArmyRuntime.NATS.Reply.error("Invalid request payload", :validation_error)
+        BotArmyLibraryRuntime.NATS.Reply.error("Invalid request payload", :validation_error)
         send_response(state, msg.reply_to, response)
     end
   end
@@ -277,7 +277,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
       }
     }
 
-    BotArmyRuntime.NATS.Publisher.publish("context.signal.filewatcher", context_update)
+    BotArmyLibraryRuntime.NATS.Publisher.publish("context.signal.filewatcher", context_update)
   end
 
   defp send_context_response(msg, status, state) when msg.reply_to do
@@ -345,7 +345,7 @@ defmodule BotArmyFileWatcher.NATS.Consumer do
   end
 
   defp register_with_retry(bot, subjects, version, status, attempts) do
-    BotArmyRuntime.Registry.register(bot, subjects, version, status)
+    BotArmyLibraryRuntime.Registry.register(bot, subjects, version, status)
     :ok
   rescue
     _e ->

@@ -167,7 +167,7 @@ defmodule BotArmyFileWatcher.Watcher do
       }
     }
 
-    BotArmyRuntime.NATS.Publisher.publish("events.filewatcher.git_status", payload)
+    BotArmyLibraryRuntime.NATS.Publisher.publish("events.filewatcher.git_status", payload)
   end
 
   defp warn_dirty_repo(dir, status) do
@@ -195,7 +195,7 @@ defmodule BotArmyFileWatcher.Watcher do
       }
     }
 
-    BotArmyRuntime.NATS.Publisher.publish("events.filewatcher.dirty_repo_warning", payload)
+    BotArmyLibraryRuntime.NATS.Publisher.publish("events.filewatcher.dirty_repo_warning", payload)
   end
 
   defp maybe_suggest_tests(_dir, _status) do
