@@ -3,7 +3,7 @@ MIX ?= /Users/abby/.local/share/mise/shims/mix
 BOT_RELEASE_NAME ?= filewatcher_bot
 BOT_NAME_TITLE ?= Filewatcher
 
-.PHONY: setup help deps test credo dialyzer coverage check format clean release publish-release setup-hooks setup-db reset-db logs push-and-publish bump-version
+.PHONY: setup help deps test dialyzer coverage check format clean release publish-release setup-hooks setup-db reset-db logs push-and-publish
 
 help:
 	@echo "Bot Army Filewatcher - Git status monitoring"
@@ -73,17 +73,8 @@ _compile-impl:
 deps:
 	$(MIX) deps.get
 
-_compile-impl:
-	@LOG_FILE="/tmp/compile-filewatcher-$$(date +%s).log"; \
-	echo "Compiling filewatcher and logging to $$LOG_FILE..."; \
-	$(MIX) compile 2>&1 | tee "$$LOG_FILE"; \
-	echo "✓ Compilation log: $$LOG_FILE"
-
 test:
 	$(MIX) test
-
-credo:
-	$(MIX) credo
 
 dialyzer: deps
 	$(MIX) dialyzer
@@ -155,22 +146,6 @@ push-and-publish:
 logs:
 	@$(SCRIPTS_DIRECTORY)/tail_bot_log.sh
 
-bump-version:
-	@if [ -z "$(BUMP)" ]; then echo "Usage: make bump-version BUMP=major|minor|patch"; exit 1; fi
-	@OLD=$$(grep 'version:' mix.exs | head -1 | sed -E 's/.*version: "([^"]+)".*/\1/'); \
-	bash $(SCRIPTS_DIRECTORY)/bump_version.sh mix.exs $(BUMP) > /dev/null; \
-	NEW=$$(grep 'version:' mix.exs | head -1 | sed -E 's/.*version: "([^"]+)".*/\1/'); \
-	echo "✓ Bumped: $$OLD → $$NEW"
-
-push: test compile credo
-	@echo "✅ All validations passed"
-	@echo "$$(date +%s)" > .push-validated
-	@echo "✓ Proof-of-validation created"
-	@$(MAKE) git-push
-
-
-git-push:
-	@git push origin main 2>&1 | tail -3
 
 # Shared targets (push, credo, pre-push-cleanup, bump-version, git-push).
 # Defined once in bot_army_infra so they cannot drift per repo.
