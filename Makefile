@@ -1,5 +1,4 @@
 SCRIPTS_DIRECTORY ?= $(abspath $(CURDIR)/../scripts)
-MIX ?= /Users/abby/.local/share/mise/shims/mix
 BOT_RELEASE_NAME ?= filewatcher_bot
 BOT_NAME_TITLE ?= Filewatcher
 
